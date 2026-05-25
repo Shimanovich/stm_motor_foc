@@ -106,23 +106,30 @@ void MotorTask(void *argument)
     // Зелёный LED — задача запущена
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
+    float vm = 9.0;
+    driverMot0.voltage_power_supply = vm;
+    driverMot0.voltage_power_supply = vm;
+    driverMot0.voltage_power_supply = vm;
+
     driverMot0.init();
     driverMot1.init();
     driverMot2.init();
 
+
+
     // === Настройка моторов (только openloop) ===
     motor0.pole_pairs     = 7;
-    motor0.voltage_limit  = 4.0f;      // безопасно для начала
+    motor0.voltage_limit  = 6.0f;      // безопасно для начала
     motor0.velocity_limit = 30.0f;
     motor0.controller     = ControlType::velocity_openloop;
 
     motor1.pole_pairs     = 7;
-    motor1.voltage_limit  = 4.0f;
+    motor1.voltage_limit  = 6.0f;
     motor1.velocity_limit = 30.0f;
     motor1.controller     = ControlType::velocity_openloop;
 
     motor2.pole_pairs     = 7;
-    motor2.voltage_limit  = 4.0f;
+    motor2.voltage_limit  = 6.0f;
     motor2.velocity_limit = 30.0f;
     motor2.controller     = ControlType::velocity_openloop;
 
@@ -144,6 +151,7 @@ void MotorTask(void *argument)
 
     for(;;)
     {
+    	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
         target_vel = 15.0f;
         motor0.move(target_vel);
         motor1.move(target_vel);
