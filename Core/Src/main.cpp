@@ -103,89 +103,32 @@ void MotorTask(void *argument);
 
 void MotorTask(void *argument)
 {
-    // Зелёный LED — задача запущена
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-
-    float vm = 12.0;
+    // === НАСТРОЙКИ ДЛЯ DC-2813C + 12 В ===
+    float vm = 7.0f;
     driverMot0.voltage_power_supply = vm;
-    driverMot1.voltage_power_supply = vm;
-    driverMot2.voltage_power_supply = vm;
+    driverMot0.voltage_limit = 4.0f;     // ← УВЕЛИЧИЛИ (было 3.0)
 
-    float vl = 3.0;
-    driverMot0.voltage_limit 		= vl;
-    driverMot1.voltage_limit 		= vl;
-    driverMot2.voltage_limit 		= vl;
-
-    driverMot0.init();
-    driverMot1.init();
-    driverMot2.init();
-
-
-
-    // === Настройка моторов (только openloop) ===
     motor0.pole_pairs     = 7;
-    motor0.voltage_limit  = 5.0f;      // безопасно для начала
-    motor0.velocity_limit = 30.0f;
+    motor0.voltage_limit  = 3.0f;        // ← УВЕЛИЧИЛИ (было 5.0)
+    motor0.velocity_limit = 60.0f;       // можно выше
     motor0.controller     = ControlType::velocity_openloop;
 
-    motor1.pole_pairs     = 7;
-    motor1.voltage_limit  = 5.0f;
-    motor1.velocity_limit = 30.0f;
-    motor1.controller     = ControlType::velocity_openloop;
-
-    motor2.pole_pairs     = 7;
-    motor2.voltage_limit  = 5.0f;
-    motor2.velocity_limit = 30.0f;
-    motor2.controller     = ControlType::velocity_openloop;
-
+    driverMot0.init();
     motor0.linkDriver(&driverMot0);
-    motor1.linkDriver(&driverMot1);
-    motor2.linkDriver(&driverMot2);
-
-    // === ТОЛЬКО init(), БЕЗ initFOC() ===
     motor0.init();
-    motor1.init();
-    motor2.init();
-
-    // Можно явно сказать, что сенсора нет (на всякий случай)
     motor0.sensor = nullptr;
-    motor1.sensor = nullptr;
-    motor2.sensor = nullptr;
 
-    float target_vel = 10.0f;
+    motor0.enable();
 
-
-    motor0.move(target_vel);
-    motor1.move(target_vel);
-    motor2.move(target_vel);
-
+    float target_vel = 50.0f;   // ← начинаем с комфортной скорости
 
     for(;;)
     {
-    	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
-    	//motor0.loopFOC();
-    	//motor1.loopFOC();
-    	//motor2.loopFOC();
-
-    	motor0.move(target_vel);
-    	//motor1.move(target_vel);
-    	//motor2.move(target_vel);
-
+        motor0.move(target_vel);     // ← только move(), loopFOC закомментирован (правильно)
 
         osDelay(1);
-
-//        target_vel = -.0f;
-//        motor0.move(target_vel);
-//        motor1.move(target_vel);
-//        motor2.move(target_vel);
-//        osDelay(4000);
-//
-//        target_vel = 0.0f;
-//        motor0.move(target_vel);
-//        motor1.move(target_vel);
-//        motor2.move(target_vel);
-//        osDelay(2000);
     }
 }
 
