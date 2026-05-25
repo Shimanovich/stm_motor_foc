@@ -152,9 +152,8 @@ void MotorTask(void *argument)
     motor1.sensor = nullptr;
     motor2.sensor = nullptr;
 
-    float target_vel = 0.0f;
+    float target_vel = 10.0f;
 
-    target_vel = 1.0f;
 
     motor0.move(target_vel);
     motor1.move(target_vel);
@@ -165,7 +164,7 @@ void MotorTask(void *argument)
     {
     	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
-    	motor0.loopFOC();
+    	//motor0.loopFOC();
     	//motor1.loopFOC();
     	//motor2.loopFOC();
 
