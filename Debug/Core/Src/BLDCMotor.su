@@ -10,5 +10,5 @@ D:\ST\STM32CubeIDE_2.1.1\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externalt
 ../Core/Src/BLDCMotor.cpp:186:6:virtual void BLDCMotor::loopFOC()	24	static
 ../Core/Src/BLDCMotor.cpp:198:6:virtual void BLDCMotor::move(float)	24	static
 ../Core/Src/BLDCMotor.cpp:243:6:void BLDCMotor::setPhaseVoltage(float, float, float)	72	static
-../Core/Src/BLDCMotor.cpp:399:6:void BLDCMotor::velocityOpenloop(float)	32	static
-../Core/Src/BLDCMotor.cpp:418:6:void BLDCMotor::angleOpenloop(float)	32	static
+../Core/Src/BLDCMotor.cpp:400:6:void BLDCMotor::velocityOpenloop(float)	32	static
+../Core/Src/BLDCMotor.cpp:419:6:void BLDCMotor::angleOpenloop(float)	32	static

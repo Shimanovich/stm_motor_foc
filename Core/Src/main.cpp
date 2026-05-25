@@ -14,6 +14,7 @@
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
+//#include "stdio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -107,10 +108,10 @@ void MotorTask(void *argument)
     float vm = 7.0f;
     driverMot0.voltage_power_supply = vm;
 
-    driverMot0.voltage_limit = 4.0f;     // ← УВЕЛИЧИЛИ (было 3.0)
+    driverMot0.voltage_limit = 4.0f;
     motor0.pole_pairs     = 7;
 
-    motor0.voltage_limit  = 3.0f;        // ← УВЕЛИЧИЛИ (было 5.0)
+    motor0.voltage_limit  = 3.0f;
     motor0.velocity_limit = 60.0f;       // можно выше
     motor0.controller     = ControlType::velocity_openloop;
 
@@ -123,13 +124,15 @@ void MotorTask(void *argument)
 
     float target_vel = 1.0f;   // ← начинаем с комфортной скорости
 
+
+
     for(;;)
     {
         HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
         motor0.move(target_vel);     // ← только move(), loopFOC закомментирован (правильно)
 
-        osDelay(1);
+        //osDelay(1);
     }
 }
 
@@ -187,7 +190,7 @@ int main(void)
     MX_FREERTOS_Init();               // инициализация объектов
     osKernelInitialize();             // ← ЯВНЫЙ вызов
 
-
+    //MotorTask(NULL);
 
 
     /* Создаём задачу с умеренным стеком */
