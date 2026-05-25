@@ -1,0 +1,4 @@
+../Core/Src/main.cpp:77:6:void MotorTask(void*)	1
+../Core/Src/main.cpp:144:5:int main()	1
+../Core/Src/main.cpp:184:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:184:1:cpp)	1
