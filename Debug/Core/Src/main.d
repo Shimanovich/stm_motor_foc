@@ -25,19 +25,9 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
- ../Core/Inc/FreeRTOSConfig.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3/portmacro.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- ../Core/Inc/i2c.h ../Core/Inc/main.h ../Core/Inc/tim.h \
- ../Core/Inc/usart.h ../Core/Inc/gpio.h \
+ ../Core/Inc/gpio.h ../Core/Inc/main.h ../Core/Inc/i2c.h \
+ ../Core/Inc/tim.h ../Core/Inc/usart.h \
  D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/motor_drivers/BLDCDriver3PWM.h \
  D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h \
  ../Core/Inc/BLDCMotor.h \
@@ -55,7 +45,7 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../Core/Inc/../src/common/foc_utils.h \
  ../Core/Inc/../src/common/time_utils.h \
  ../Core/Inc/../src/common/defaults.h \
- D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/FOCMotor.h
+ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/foc_utils.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 ../Core/Inc/stm32f1xx_hal_conf.h:
@@ -83,22 +73,12 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h:
-../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
-../Core/Inc/FreeRTOSConfig.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h:
-../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3/portmacro.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
-../Middlewares/Third_Party/FreeRTOS/Source/include/list.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
-../Core/Inc/i2c.h:
+../Core/Inc/gpio.h:
 ../Core/Inc/main.h:
+../Core/Inc/i2c.h:
 ../Core/Inc/tim.h:
 ../Core/Inc/usart.h:
-../Core/Inc/gpio.h:
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/motor_drivers/BLDCDriver3PWM.h:
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h:
 ../Core/Inc/BLDCMotor.h:
@@ -116,4 +96,4 @@ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base
 ../Core/Inc/../src/common/foc_utils.h:
 ../Core/Inc/../src/common/time_utils.h:
 ../Core/Inc/../src/common/defaults.h:
-D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/FOCMotor.h:
+D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/foc_utils.h:

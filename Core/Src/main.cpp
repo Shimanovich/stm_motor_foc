@@ -1,42 +1,25 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
+  * @file           : main.cpp
+  * @brief          : Main program body для STorM32-BGC v1.30 + SimpleFOC
   ******************************************************************************
   */
 /* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
+#include "gpio.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
-#include "gpio.h"
-
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "FreeRTOS.h"
 #include "BLDCDriver3PWM.h"
 #include "BLDCMotor.h"
-#include "FOCMotor.h"
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include "foc_utils.h"      // если требуется
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,43 +38,102 @@ extern "C" {
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+osThreadId_t motorTaskHandle;
 
 /* USER CODE BEGIN PV */
 
-// === Создание драйверов для всех трёх моторов ===
-BLDCDriver3PWM driverMot0(&htim3, TIM_CHANNEL_2,   // PA7  TIM3_CH2
-                          &htim3, TIM_CHANNEL_3,   // PB0  TIM3_CH3
-                          &htim3, TIM_CHANNEL_4);  // PB1  TIM3_CH4   ← Mot0
+// === Драйверы моторов (3PWM) ===
+BLDCDriver3PWM driverMot0(&htim3, TIM_CHANNEL_2,   // Mot0: PA7  TIM3_CH2
+                          &htim3, TIM_CHANNEL_3,   //       PB0  TIM3_CH3
+                          &htim3, TIM_CHANNEL_4);  //       PB1  TIM3_CH4
 
-BLDCDriver3PWM driverMot1(&htim3, TIM_CHANNEL_1,   // PA6  TIM3_CH1
-                          &htim2, TIM_CHANNEL_3,   // PA2  TIM2_CH3
-                          &htim2, TIM_CHANNEL_4);  // PA3  TIM2_CH4   ← Mot1
+BLDCDriver3PWM driverMot1(&htim3, TIM_CHANNEL_1,   // Mot1: PA6  TIM3_CH1
+                          &htim2, TIM_CHANNEL_3,   //       PA2  TIM2_CH3
+                          &htim2, TIM_CHANNEL_4);  //       PA3  TIM2_CH4
 
-BLDCDriver3PWM driverMot2(&htim2, TIM_CHANNEL_2,   // PA1  TIM2_CH2
-                          &htim4, TIM_CHANNEL_3,   // PB8  TIM4_CH3
-                          &htim4, TIM_CHANNEL_4);  // PB9  TIM4_CH4   ← Mot2
+BLDCDriver3PWM driverMot2(&htim2, TIM_CHANNEL_2,   // Mot2: PA1  TIM2_CH2
+                          &htim4, TIM_CHANNEL_3,   //       PB8  TIM4_CH3
+                          &htim4, TIM_CHANNEL_4);  //       PB9  TIM4_CH4
 
-
-BLDCMotor motor0 = BLDCMotor(7);
-BLDCMotor motor1 = BLDCMotor(7);
-BLDCMotor motor2 = BLDCMotor(7);
-
-
+// === Моторы (DC-2813C — 7 пар полюсов) ===
+BLDCMotor motor0 = BLDCMotor(7);   // Mot0
+BLDCMotor motor1 = BLDCMotor(7);   // Mot1
+BLDCMotor motor2 = BLDCMotor(7);   // Mot2
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
-/* USER CODE BEGIN PFP */
-#ifdef __cplusplus
-}
-#endif
 
+/* USER CODE BEGIN PFP */
+void MotorTask(void *argument);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void MotorTask(void *argument)
+{
+    /* Инициализация драйверов */
+    driverMot0.init();
+    driverMot1.init();
+    driverMot2.init();
+
+    /* Настройка моторов (DC-2813C) */
+    motor0.pole_pairs     = 7;
+    motor0.voltage_limit  = 4.0f;      // безопасное значение на старте
+    motor0.velocity_limit = 30.0f;
+    motor0.controller     = MotionControlType::velocity_openloop;
+
+    motor1.pole_pairs     = 7;
+    motor1.voltage_limit  = 4.0f;
+    motor1.velocity_limit = 30.0f;
+    motor1.controller     = MotionControlType::velocity_openloop;
+
+    motor2.pole_pairs     = 7;
+    motor2.voltage_limit  = 4.0f;
+    motor2.velocity_limit = 30.0f;
+    motor2.controller     = MotionControlType::velocity_openloop;
+
+    /* Привязка драйверов */
+    motor0.linkDriver(&driverMot0);
+    motor1.linkDriver(&driverMot1);
+    motor2.linkDriver(&driverMot2);
+
+    /* Инициализация FOC (даже в open-loop режиме) */
+    motor0.init();
+    motor1.init();
+    motor2.init();
+
+    motor0.initFOC();
+    motor1.initFOC();
+    motor2.initFOC();
+
+    float target_vel = 0.0f;
+
+    for(;;)
+    {
+        // Тест: плавное вращение вперёд-назад на всех трёх моторах одновременно
+        target_vel = 15.0f;                     // rad/s ≈ 143 об/мин
+        motor0.move(target_vel);
+        motor1.move(target_vel);
+        motor2.move(target_vel);
+        osDelay(4000);                          // 4 секунды вперёд
+
+        target_vel = -15.0f;
+        motor0.move(target_vel);
+        motor1.move(target_vel);
+        motor2.move(target_vel);
+        osDelay(4000);                          // 4 секунды назад
+
+        target_vel = 0.0f;
+        motor0.move(target_vel);
+        motor1.move(target_vel);
+        motor2.move(target_vel);
+        osDelay(2000);                          // пауза 2 секунды
+    }
+}
 
 /* USER CODE END 0 */
 
@@ -101,121 +143,60 @@ void MX_FREERTOS_Init(void);
   */
 int main(void)
 {
+    /* USER CODE BEGIN 1 */
 
-  /* USER CODE BEGIN 1 */
+    /* USER CODE END 1 */
 
-  /* USER CODE END 1 */
+    /* MCU Configuration--------------------------------------------------------*/
 
-  /* MCU Configuration--------------------------------------------------------*/
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* USER CODE BEGIN Init */
 
-  /* USER CODE BEGIN Init */
+    /* USER CODE END Init */
 
-  /* USER CODE END Init */
+    /* Configure the system clock */
+    SystemClock_Config();
 
-  /* Configure the system clock */
-  SystemClock_Config();
+    /* USER CODE BEGIN SysInit */
 
-  /* USER CODE BEGIN SysInit */
+    /* USER CODE END SysInit */
 
-  /* USER CODE END SysInit */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_TIM2_Init();
+    MX_TIM3_Init();
+    MX_TIM4_Init();
+    MX_I2C2_Init();
+    MX_USART3_UART_Init();
+    /* USER CODE BEGIN 2 */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_I2C1_Init();
-  MX_I2C2_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_TIM4_Init();
-  MX_USART3_UART_Init();
-  /* USER CODE BEGIN 2 */
+    MX_FREERTOS_Init();
 
-  // Инициализация
-  driverMot0.init();
-  driverMot1.init();
-  driverMot2.init();
+    /* Создаём задачу управления моторами */
+    const osThreadAttr_t motorTask_attributes = {
+        .name = "MotorTask",
+        .priority = (osPriority_t) osPriorityAboveNormal,
+        .stack_size = 4096     // 4 КБ стек (достаточно для SimpleFOC)
+    };
 
-  motor0.pole_pairs = 7;                    // обязательно
+    motorTaskHandle = osThreadNew(MotorTask, NULL, &motorTask_attributes);
 
-  motor0.voltage_limit = 4.0f;              // стартовое безопасное значение (3.0–5.0 В)
-  motor0.velocity_limit = 20.0f;            // rad/s (примерно 190 об/мин) — можно увеличить позже
- // motor0.current_limit = 1.0f;              // не используется (нет датчиков тока), но оставьте
+    /* USER CODE END 2 */
 
-  // Для voltage mode (у вас только 3PWM)
-  motor0.controller = ControlType::velocity_openloop;   // или angle_openloop на старте
+    /* Start scheduler */
+    osKernelStart();
 
-  // Инициализация
-  motor0.linkDriver(&driverMot0);   // или ваш драйвер
-  motor0.init();
-  motor0.initFOC();                 // даже в open-loop режиме
-
-  while(1) {
-      motor0.move(10.0f);  // rad/s
-      HAL_Delay(10);
-  }
-
-  /* USER CODE END 2 */
-
-#if 0
-  /* Init scheduler */
-  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  MX_FREERTOS_Init();
-
-  /* Start scheduler */
-  osKernelStart();
-#endif
-  /* We should never get here as control is now taken by the scheduler */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+    /* We should never get here as control is now taken by the scheduler */
+    /* USER CODE BEGIN WHILE */
+    while (1)
+    {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
-}
-
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    }
+    /* USER CODE END 3 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -223,32 +204,27 @@ void SystemClock_Config(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
   * @retval None
   */
-void Error_Handler(void)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+    /* USER CODE BEGIN Callback 0 */
+
+    /* USER CODE END Callback 0 */
+    if (htim->Instance == TIM1)
+    {
+        HAL_IncTick();
+    }
+    /* USER CODE BEGIN Callback 1 */
+
+    /* USER CODE END Callback 1 */
 }
-#ifdef USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
+
+/* USER CODE BEGIN 4 */
+
+/* USER CODE END 4 */
