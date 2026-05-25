@@ -103,12 +103,13 @@ void MotorTask(void *argument);
 
 void MotorTask(void *argument)
 {
-    // === НАСТРОЙКИ ДЛЯ DC-2813C + 12 В ===
+    // === НАСТРОЙКИ ДЛЯ DC-2813C + 7 В ===
     float vm = 7.0f;
     driverMot0.voltage_power_supply = vm;
-    driverMot0.voltage_limit = 4.0f;     // ← УВЕЛИЧИЛИ (было 3.0)
 
+    driverMot0.voltage_limit = 4.0f;     // ← УВЕЛИЧИЛИ (было 3.0)
     motor0.pole_pairs     = 7;
+
     motor0.voltage_limit  = 3.0f;        // ← УВЕЛИЧИЛИ (было 5.0)
     motor0.velocity_limit = 60.0f;       // можно выше
     motor0.controller     = ControlType::velocity_openloop;
@@ -120,7 +121,7 @@ void MotorTask(void *argument)
 
     motor0.enable();
 
-    float target_vel = 50.0f;   // ← начинаем с комфортной скорости
+    float target_vel = 1.0f;   // ← начинаем с комфортной скорости
 
     for(;;)
     {
@@ -180,14 +181,6 @@ int main(void)
     MX_TIM4_Init();
     MX_I2C2_Init();
     MX_USART3_UART_Init();
-
-
-//    Test_Mot0_PWM();
-//
-//    while (1)
-//    {
-//     // ваш старый код можно закомментировать
-//    }
 
 
     /* === FreeRTOS === */
