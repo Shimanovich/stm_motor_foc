@@ -1,0 +1,4 @@
+../Core/Src/common/base_classes/FOCMotor.cpp:11:1:FOCMotor::FOCMotor()	1
+../Core/Src/common/base_classes/FOCMotor.cpp:44:6:void FOCMotor::linkSensor(Sensor*)	1
+../Core/Src/common/base_classes/FOCMotor.cpp:48:7:float FOCMotor::shaftAngle()	2
+../Core/Src/common/base_classes/FOCMotor.cpp:54:7:float FOCMotor::shaftVelocity()	2

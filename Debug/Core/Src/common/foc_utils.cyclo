@@ -1,0 +1,5 @@
+../Core/Src/common/foc_utils.cpp:22:7:float _sin(float)	8
+../Core/Src/common/foc_utils.cpp:47:7:float _cos(float)	2
+../Core/Src/common/foc_utils.cpp:55:7:float _normalizeAngle(float)	2
+../Core/Src/common/foc_utils.cpp:61:7:float _electricalAngle(float, int)	1
+D:\ST\STM32CubeIDE_2.1.1\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.win32_1.0.100.202602081740\tools\bin/../lib/gcc/arm-none-eabi/14.3.1/../../../../arm-none-eabi/include/c++/14.3.1/cmath:1065:5:constexpr typename __gnu_cxx::__promote_2<_Tp, _Up>::__type std::fmod(_Tp, _Up) [with _Tp = float; _Up = double]	1
