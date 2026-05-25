@@ -106,10 +106,15 @@ void MotorTask(void *argument)
     // Зелёный LED — задача запущена
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
-    float vm = 9.0;
+    float vm = 12.0;
     driverMot0.voltage_power_supply = vm;
-    driverMot0.voltage_power_supply = vm;
-    driverMot0.voltage_power_supply = vm;
+    driverMot1.voltage_power_supply = vm;
+    driverMot2.voltage_power_supply = vm;
+
+    float vl = 3.0;
+    driverMot0.voltage_limit 		= vl;
+    driverMot1.voltage_limit 		= vl;
+    driverMot2.voltage_limit 		= vl;
 
     driverMot0.init();
     driverMot1.init();
@@ -119,17 +124,17 @@ void MotorTask(void *argument)
 
     // === Настройка моторов (только openloop) ===
     motor0.pole_pairs     = 7;
-    motor0.voltage_limit  = 6.0f;      // безопасно для начала
+    motor0.voltage_limit  = 5.0f;      // безопасно для начала
     motor0.velocity_limit = 30.0f;
     motor0.controller     = ControlType::velocity_openloop;
 
     motor1.pole_pairs     = 7;
-    motor1.voltage_limit  = 6.0f;
+    motor1.voltage_limit  = 5.0f;
     motor1.velocity_limit = 30.0f;
     motor1.controller     = ControlType::velocity_openloop;
 
     motor2.pole_pairs     = 7;
-    motor2.voltage_limit  = 6.0f;
+    motor2.voltage_limit  = 5.0f;
     motor2.velocity_limit = 30.0f;
     motor2.controller     = ControlType::velocity_openloop;
 
@@ -149,29 +154,77 @@ void MotorTask(void *argument)
 
     float target_vel = 0.0f;
 
+    target_vel = 1.0f;
+
+    motor0.move(target_vel);
+    motor1.move(target_vel);
+    motor2.move(target_vel);
+
+
     for(;;)
     {
     	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-        target_vel = 15.0f;
-        motor0.move(target_vel);
-        motor1.move(target_vel);
-        motor2.move(target_vel);
-        osDelay(4000);
 
-        target_vel = -15.0f;
-        motor0.move(target_vel);
-        motor1.move(target_vel);
-        motor2.move(target_vel);
-        osDelay(4000);
+    	motor0.loopFOC();
+    	//motor1.loopFOC();
+    	//motor2.loopFOC();
 
-        target_vel = 0.0f;
-        motor0.move(target_vel);
-        motor1.move(target_vel);
-        motor2.move(target_vel);
-        osDelay(2000);
+    	motor0.move(target_vel);
+    	//motor1.move(target_vel);
+    	//motor2.move(target_vel);
+
+
+        osDelay(1);
+
+//        target_vel = -.0f;
+//        motor0.move(target_vel);
+//        motor1.move(target_vel);
+//        motor2.move(target_vel);
+//        osDelay(4000);
+//
+//        target_vel = 0.0f;
+//        motor0.move(target_vel);
+//        motor1.move(target_vel);
+//        motor2.move(target_vel);
+//        osDelay(2000);
     }
 }
 
+
+
+void Test_Mot0_PWM(void)
+{
+    // Запускаем PWM (на всякий случай)
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // PA7  = TIM3_CH2
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // PB0  = TIM3_CH3
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // PB1  = TIM3_CH4
+
+    const uint16_t period = htim3.Init.Period;           // обычно 65535
+    uint16_t duty = (uint16_t)(period * 0.30f);          // 30% — начинаем с этого
+
+    while (1)
+    {
+        // Фиксированная позиция (ротор должен сильно дёрнуться и удерживаться)
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, duty);   // Phase A
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);      // Phase B
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);      // Phase C
+
+        HAL_Delay(2000);   // держим 2 секунды
+
+        // Меняем позицию (чтобы увидеть, что мотор реагирует)
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, duty);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);
+
+        HAL_Delay(2000);
+
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, duty);
+
+        HAL_Delay(2000);
+    }
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -186,9 +239,21 @@ int main(void)
     MX_I2C2_Init();
     MX_USART3_UART_Init();
 
+
+//    Test_Mot0_PWM();
+//
+//    while (1)
+//    {
+//     // ваш старый код можно закомментировать
+//    }
+
+
     /* === FreeRTOS === */
     MX_FREERTOS_Init();               // инициализация объектов
     osKernelInitialize();             // ← ЯВНЫЙ вызов
+
+
+
 
     /* Создаём задачу с умеренным стеком */
     const osThreadAttr_t motorTask_attributes = {

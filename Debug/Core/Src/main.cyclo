@@ -1,6 +1,7 @@
 ../Core/Src/main.cpp:30:6:void Error_Handler()	1
 ../Core/Src/main.cpp:37:6:void SystemClock_Config()	3
 ../Core/Src/main.cpp:104:6:void MotorTask(void*)	1
-../Core/Src/main.cpp:177:5:int main()	2
-../Core/Src/main.cpp:214:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:214:1:cpp)	1
+../Core/Src/main.cpp:195:6:void Test_Mot0_PWM()	1
+../Core/Src/main.cpp:230:5:int main()	2
+../Core/Src/main.cpp:279:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:279:1:cpp)	1
