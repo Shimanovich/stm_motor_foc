@@ -1,6 +1,6 @@
 ../Core/Src/main.cpp:30:6:void Error_Handler()	4	static,ignoring_inline_asm
 ../Core/Src/main.cpp:37:6:void SystemClock_Config()	72	static
-../Core/Src/main.cpp:111:6:void MotorTask(void*)	24	static
-../Core/Src/main.cpp:170:5:int main()	48	static
-../Core/Src/main.cpp:197:1:void __static_initialization_and_destruction_0()	24	static
-../Core/Src/main.cpp:197:1:cpp)	8	static
+../Core/Src/main.cpp:104:6:void MotorTask(void*)	24	static
+../Core/Src/main.cpp:169:5:int main()	48	static
+../Core/Src/main.cpp:206:1:void __static_initialization_and_destruction_0()	24	static
+../Core/Src/main.cpp:206:1:cpp)	8	static

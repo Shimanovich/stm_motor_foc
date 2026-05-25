@@ -33,15 +33,12 @@ void Error_Handler(void)
     while (1) {}
 }
 
-/* Полная реализация SystemClock_Config (8MHz HSE → 72MHz) */
+/* Полная реализация SystemClock_Config (HSE 8MHz → 72MHz) */
 void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-    /** Initializes the RCC Oscillators according to the specified parameters
-    * in the RCC_OscInitTypeDef structure.
-    */
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;
     RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -54,8 +51,6 @@ void SystemClock_Config(void)
         Error_Handler();
     }
 
-    /** Initializes the CPU, AHB and APB buses clocks
-    */
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                                 |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -88,17 +83,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 osThreadId_t motorTaskHandle;
 
 /* USER CODE BEGIN PV */
-
 // Драйверы
 BLDCDriver3PWM driverMot0(&htim3, TIM_CHANNEL_2, &htim3, TIM_CHANNEL_3, &htim3, TIM_CHANNEL_4);
 BLDCDriver3PWM driverMot1(&htim3, TIM_CHANNEL_1, &htim2, TIM_CHANNEL_3, &htim2, TIM_CHANNEL_4);
 BLDCDriver3PWM driverMot2(&htim2, TIM_CHANNEL_2, &htim4, TIM_CHANNEL_3, &htim4, TIM_CHANNEL_4);
 
-// Моторы DC-2813C
+// Моторы DC-2813C (7 pole pairs)
 BLDCMotor motor0 = BLDCMotor(7);
 BLDCMotor motor1 = BLDCMotor(7);
 BLDCMotor motor2 = BLDCMotor(7);
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,12 +103,16 @@ void MotorTask(void *argument);
 
 void MotorTask(void *argument)
 {
+    // Зелёный LED — задача запущена
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+
     driverMot0.init();
     driverMot1.init();
     driverMot2.init();
 
+    // === Настройка моторов (только openloop) ===
     motor0.pole_pairs     = 7;
-    motor0.voltage_limit  = 4.0f;
+    motor0.voltage_limit  = 4.0f;      // безопасно для начала
     motor0.velocity_limit = 30.0f;
     motor0.controller     = ControlType::velocity_openloop;
 
@@ -133,13 +130,15 @@ void MotorTask(void *argument)
     motor1.linkDriver(&driverMot1);
     motor2.linkDriver(&driverMot2);
 
+    // === ТОЛЬКО init(), БЕЗ initFOC() ===
     motor0.init();
     motor1.init();
     motor2.init();
 
-    motor0.initFOC();
-    motor1.initFOC();
-    motor2.initFOC();
+    // Можно явно сказать, что сенсора нет (на всякий случай)
+    motor0.sensor = nullptr;
+    motor1.sensor = nullptr;
+    motor2.sensor = nullptr;
 
     float target_vel = 0.0f;
 
@@ -179,21 +178,31 @@ int main(void)
     MX_I2C2_Init();
     MX_USART3_UART_Init();
 
-    /* USER CODE BEGIN 2 */
-    MX_FREERTOS_Init();
+    /* === FreeRTOS === */
+    MX_FREERTOS_Init();               // инициализация объектов
+    osKernelInitialize();             // ← ЯВНЫЙ вызов
 
+    /* Создаём задачу с умеренным стеком */
     const osThreadAttr_t motorTask_attributes = {
         .name       = "MotorTask",
-        .stack_size = 4096,
+        .stack_size = 3072,                    // 3 КБ — достаточно
         .priority   = (osPriority_t) osPriorityAboveNormal
     };
 
     motorTaskHandle = osThreadNew(MotorTask, NULL, &motorTask_attributes);
-    /* USER CODE END 2 */
 
-    osKernelStart();
+    if (motorTaskHandle == NULL) {
+        // быстрый красный — задача не создана
+        while(1) { HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13); osDelay(80); }
+    }
 
-    while (1) {}
+    osStatus_t status = osKernelStart();
+
+    // Если дошли сюда — osKernelStart() вернул osError
+    while(1) {
+        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);   // медленный красный
+        osDelay(500);
+    }
 }
 
 /* USER CODE BEGIN 4 */
