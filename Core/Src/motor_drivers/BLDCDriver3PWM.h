@@ -2,6 +2,7 @@
 
 #include "BLDCDriver.h"
 #include "tim.h"          // htim2, htim3, htim4 из CubeMX
+#include "foc_utils.h"
 
 class BLDCDriver3PWM : public BLDCDriver
 {

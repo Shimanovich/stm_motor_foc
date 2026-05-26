@@ -1,8 +1,11 @@
-../Core/Src/main.cpp:34:5:int _write(int, char*, int)	1
-../Core/Src/main.cpp:40:6:void Error_Handler()	1
-../Core/Src/main.cpp:47:6:void SystemClock_Config()	3
-../Core/Src/main.cpp:114:6:void MotorTask(void*)	3
-../Core/Src/main.cpp:160:6:void Test_Mot0_PWM()	1
-../Core/Src/main.cpp:195:5:int main()	2
-../Core/Src/main.cpp:236:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:236:1:cpp)	1
+../Core/Src/main.cpp:36:5:int _write(int, char*, int)	1
+../Core/Src/main.cpp:42:6:void Error_Handler()	1
+../Core/Src/main.cpp:49:6:void SystemClock_Config()	3
+../Core/Src/main.cpp:118:6:void MPU6050_Task(void*)	4
+../Core/Src/main.cpp:193:6:void MotorTask(void*)	4
+../Core/Src/main.cpp:329:6:void I2C_ScanExternalBus(I2C_HandleTypeDef*)	5
+../Core/Src/main.cpp:368:6:void I2CScanTask(void*)	1
+../Core/Src/main.cpp:378:6:void Test_Mot0_PWM()	1
+../Core/Src/main.cpp:413:5:int main()	2
+../Core/Src/main.cpp:478:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:478:1:cpp)	1

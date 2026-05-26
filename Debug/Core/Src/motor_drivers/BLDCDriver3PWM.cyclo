@@ -7,4 +7,4 @@ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base
 ../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:15:5:virtual int BLDCDriver3PWM::init()	2
 ../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:29:6:virtual void BLDCDriver3PWM::enable()	1
 ../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:34:6:virtual void BLDCDriver3PWM::disable()	1
-../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:39:6:virtual void BLDCDriver3PWM::setPwm(float, float, float)	11
+../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:39:6:virtual void BLDCDriver3PWM::setPwm(float, float, float)	17

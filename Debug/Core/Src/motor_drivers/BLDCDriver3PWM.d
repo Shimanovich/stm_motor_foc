@@ -28,7 +28,8 @@ Core/Src/motor_drivers/BLDCDriver3PWM.o: \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+ ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
+ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/foc_utils.h
 ../Core/Src/motor_drivers/BLDCDriver3PWM.h:
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h:
 ../Core/Inc/tim.h:
@@ -59,3 +60,4 @@ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h:
+D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/foc_utils.h:
