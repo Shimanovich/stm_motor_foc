@@ -1,14 +1,14 @@
 D:\ST\STM32CubeIDE_2.1.1\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.win32_1.0.100.202602081740\tools\bin/../lib/gcc/arm-none-eabi/14.3.1/../../../../arm-none-eabi/include/c++/14.3.1/bits/std_abs.h:75:3:constexpr float std::abs(float)	1
-../Core/Src/BLDCMotor.cpp:32:1:BLDCMotor::BLDCMotor(int)	1
-../Core/Src/BLDCMotor.cpp:43:6:void BLDCMotor::linkDriver(BLDCDriver*)	1
-../Core/Src/BLDCMotor.cpp:48:6:virtual void BLDCMotor::init()	3
-../Core/Src/BLDCMotor.cpp:67:6:virtual void BLDCMotor::disable()	1
-../Core/Src/BLDCMotor.cpp:75:6:virtual void BLDCMotor::enable()	1
-../Core/Src/BLDCMotor.cpp:88:6:virtual int BLDCMotor::initFOC(float, Direction)	2
-../Core/Src/BLDCMotor.cpp:108:5:int BLDCMotor::alignSensor()	4
-../Core/Src/BLDCMotor.cpp:156:5:int BLDCMotor::absoluteZeroAlign()	7
-../Core/Src/BLDCMotor.cpp:186:6:virtual void BLDCMotor::loopFOC()	1
-../Core/Src/BLDCMotor.cpp:198:6:virtual void BLDCMotor::move(float)	7
-../Core/Src/BLDCMotor.cpp:243:6:void BLDCMotor::setPhaseVoltage(float, float, float)	12
+../Core/Src/BLDCMotor.cpp:33:1:BLDCMotor::BLDCMotor(int)	1
+../Core/Src/BLDCMotor.cpp:44:6:void BLDCMotor::linkDriver(BLDCDriver*)	1
+../Core/Src/BLDCMotor.cpp:49:6:virtual void BLDCMotor::init()	3
+../Core/Src/BLDCMotor.cpp:68:6:virtual void BLDCMotor::disable()	1
+../Core/Src/BLDCMotor.cpp:76:6:virtual void BLDCMotor::enable()	1
+../Core/Src/BLDCMotor.cpp:89:6:virtual int BLDCMotor::initFOC(float, Direction)	2
+../Core/Src/BLDCMotor.cpp:109:5:int BLDCMotor::alignSensor()	4
+../Core/Src/BLDCMotor.cpp:157:5:int BLDCMotor::absoluteZeroAlign()	7
+../Core/Src/BLDCMotor.cpp:187:6:virtual void BLDCMotor::loopFOC()	1
+../Core/Src/BLDCMotor.cpp:199:6:virtual void BLDCMotor::move(float)	7
+../Core/Src/BLDCMotor.cpp:244:6:void BLDCMotor::setPhaseVoltage(float, float, float)	12
 ../Core/Src/BLDCMotor.cpp:400:6:void BLDCMotor::velocityOpenloop(float)	1
 ../Core/Src/BLDCMotor.cpp:419:6:void BLDCMotor::angleOpenloop(float)	5

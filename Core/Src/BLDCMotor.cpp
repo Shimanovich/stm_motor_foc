@@ -9,6 +9,7 @@
 #include "BLDCMotor.h"
 
 #include <cmath>
+#include "stdio.h"
 
 using std::fmin;
 using std::fmax;
@@ -388,7 +389,6 @@ void BLDCMotor::setPhaseVoltage(float Uq, float Ud, float angle_el) {
   }
 
   // set the voltages in driver
-
     driver->setPwm(Ua, Ub, Uc);
 }
 

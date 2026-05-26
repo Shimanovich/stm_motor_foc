@@ -2,11 +2,9 @@ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h:15:22:virtual void BLDCDriver::enable()	1
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h:17:22:virtual void BLDCDriver::disable()	1
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h:30:22:virtual void BLDCDriver::setPwm(float, float, float)	1
-D:\ST\STM32CubeIDE_2.1.1\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.win32_1.0.100.202602081740\tools\bin/../lib/gcc/arm-none-eabi/14.3.1/../../../../arm-none-eabi/include/c++/14.3.1/cmath:2409:3:constexpr float std::fmax(float, float)	1
-D:\ST\STM32CubeIDE_2.1.1\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.win32_1.0.100.202602081740\tools\bin/../lib/gcc/arm-none-eabi/14.3.1/../../../../arm-none-eabi/include/c++/14.3.1/cmath:2419:3:constexpr float std::fmin(float, float)	1
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/BLDCDriver.h:9:7:BLDCDriver::BLDCDriver()	1
-../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:4:1:BLDCDriver3PWM::BLDCDriver3PWM(TIM_HandleTypeDef*, uint32_t, TIM_HandleTypeDef*, uint32_t, TIM_HandleTypeDef*, uint32_t)	1
-../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:13:5:virtual int BLDCDriver3PWM::init()	2
-../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:27:6:virtual void BLDCDriver3PWM::enable()	1
-../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:32:6:virtual void BLDCDriver3PWM::disable()	1
-../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:37:6:virtual void BLDCDriver3PWM::setPwm(float, float, float)	11
+../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:6:1:BLDCDriver3PWM::BLDCDriver3PWM(TIM_HandleTypeDef*, uint32_t, TIM_HandleTypeDef*, uint32_t, TIM_HandleTypeDef*, uint32_t)	1
+../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:15:5:virtual int BLDCDriver3PWM::init()	2
+../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:29:6:virtual void BLDCDriver3PWM::enable()	1
+../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:34:6:virtual void BLDCDriver3PWM::disable()	1
+../Core/Src/motor_drivers/BLDCDriver3PWM.cpp:39:6:virtual void BLDCDriver3PWM::setPwm(float, float, float)	11

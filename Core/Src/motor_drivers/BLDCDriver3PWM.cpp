@@ -1,6 +1,8 @@
 #include "BLDCDriver3PWM.h"
 #include <cmath>
 
+#include "stdio.h"
+
 BLDCDriver3PWM::BLDCDriver3PWM(TIM_HandleTypeDef* timA, uint32_t channelA,
                                TIM_HandleTypeDef* timB, uint32_t channelB,
                                TIM_HandleTypeDef* timC, uint32_t channelC)
@@ -38,13 +40,24 @@ void BLDCDriver3PWM::setPwm(float Ua, float Ub, float Uc)
 {
     if (_pwmPeriod == 0) return;
 
-    Ua = std::fmax(0.0f, std::fmin(1.0f, Ua));
-    Ub = std::fmax(0.0f, std::fmin(1.0f, Ub));
-    Uc = std::fmax(0.0f, std::fmin(1.0f, Uc));
+//    Ua = std::fmax(0.0f, std::fmin(1.0f, Ua));
+//    Ub = std::fmax(0.0f, std::fmin(1.0f, Ub));
+//    Uc = std::fmax(0.0f, std::fmin(1.0f, Uc));
+
+     Ua = Ua/voltage_limit;
+     Ub = Ub/voltage_limit;
+     Uc = Uc/voltage_limit;
+
+
+
 
     uint32_t pwmA = (uint32_t)(Ua * _pwmPeriod);
     uint32_t pwmB = (uint32_t)(Ub * _pwmPeriod);
     uint32_t pwmC = (uint32_t)(Uc * _pwmPeriod);
+
+//    printf(">ua:%d\n",pwmA);
+//    printf(">ub:%d\n",pwmB);
+//    printf(">uc:%d\n",pwmC);
 
     __HAL_TIM_SET_COMPARE(_timA, _channelA, pwmA);
     __HAL_TIM_SET_COMPARE(_timB, _channelB, pwmB);

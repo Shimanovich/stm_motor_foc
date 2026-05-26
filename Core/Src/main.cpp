@@ -21,12 +21,21 @@
 #include "BLDCDriver3PWM.h"
 #include "BLDCMotor.h"
 #include "FOCMotor.h"
+
+#include <stdio.h>
+
 /* USER CODE END Includes */
 
 /* === EXTERN "C" + ВСЕ НЕОБХОДИМЫЕ ФУНКЦИИ === */
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int _write(int file, char *ptr, int len)
+{
+    HAL_UART_Transmit(&huart3, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
 
 void Error_Handler(void)
 {
@@ -109,7 +118,7 @@ void MotorTask(void *argument)
     driverMot0.voltage_power_supply = vm;
 
     driverMot0.voltage_limit = 4.0f;
-    motor0.pole_pairs     = 7;
+    motor0.pole_pairs     = 14;
 
     motor0.voltage_limit  = 3.0f;
     motor0.velocity_limit = 60.0f;       // можно выше
@@ -122,17 +131,27 @@ void MotorTask(void *argument)
 
     motor0.enable();
 
-    float target_vel = 1.0f;   // ← начинаем с комфортной скорости
+    float target_vel = 0.0f;   // ← начинаем с комфортной скорости
 
+    //printf("Started\n");
 
+    float inc = 0.002;
 
     for(;;)
     {
         HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
-        motor0.move(target_vel);     // ← только move(), loopFOC закомментирован (правильно)
+        motor0.move(target_vel);
+
+        target_vel +=inc;
+
+        if (target_vel>50) inc=-inc;
+
+        if (target_vel<-50) inc=-inc;
+
 
         //osDelay(1);
+
     }
 }
 

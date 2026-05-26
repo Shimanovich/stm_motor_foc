@@ -92,7 +92,7 @@ main-build: stab_controller.elf secondary-outputs
 
 # Tool invocations
 stab_controller.elf stab_controller.map: $(OBJS) $(USER_OBJS) D:\work\my_stabilization_project\storm_stab\stab_controller\STM32F103RCTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "stab_controller.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"D:\work\my_stabilization_project\storm_stab\stab_controller\STM32F103RCTX_FLASH.ld" -Wl,-Map="stab_controller.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+	arm-none-eabi-g++ -o "stab_controller.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"D:\work\my_stabilization_project\storm_stab\stab_controller\STM32F103RCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="stab_controller.map" -Wl,--gc-sections -static -u _printf_float --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
