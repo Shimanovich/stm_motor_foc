@@ -47,7 +47,7 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../Core/Inc/../src/common/time_utils.h \
  ../Core/Inc/../src/common/defaults.h \
  D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/FOCMotor.h \
- ../Core/Inc/mpu6050.h
+ ../Core/Inc/mpu6050.h ../Core/Inc/notch_filter.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 ../Core/Inc/stm32f1xx_hal_conf.h:
@@ -101,3 +101,4 @@ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/foc_
 ../Core/Inc/../src/common/defaults.h:
 D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base_classes/FOCMotor.h:
 ../Core/Inc/mpu6050.h:
+../Core/Inc/notch_filter.h:

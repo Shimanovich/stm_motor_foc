@@ -23,6 +23,7 @@
 #include "FOCMotor.h"
 
 #include "mpu6050.h"
+#include "notch_filter.h"
 
 #include <stdio.h>
 
@@ -43,6 +44,20 @@ void Error_Handler(void)
 {
     __disable_irq();
     while (1) {}
+}
+
+
+// Глобальные/статические переменные
+NotchFilter gyro_notch;
+float gyro_rate_filtered_rad_s = 0.0f;
+
+// В init (например, в main() или task init)
+void Stabilization_Init(void)
+{
+    // fs — частота вызова фильтра (например 1000 Гц)
+    // f_notch — частота вашего резонанса (измерьте осциллографом/FFT)
+    // Q — добротность (обычно 5…30, чем выше — уже режекция)
+    Notch_Init(&gyro_notch, 500.0f, 18.8f, 30.0f);   // пример: 85 Гц, Q=10
 }
 
 /* Полная реализация SystemClock_Config (HSE 8MHz → 72MHz) */
@@ -192,49 +207,43 @@ void MotorTask(void *argument);
 
 void MotorTask(void *argument)
 {
+    I2C_ScanExternalBus(&hi2c2);
+    I2C_ScanExternalBus(&hi2c1);
 
-	 I2C_ScanExternalBus(&hi2c2);
-	 I2C_ScanExternalBus(&hi2c1);
+    if (MPU6050_Init(&hi2c2, 0xd0) != HAL_OK) {
+        printf("MPU6050: init error!\r\n");
+        for (;;); // остановка задачи
+    }
+    printf("MPU6050: init Ok (adr 0x69)\r\n");
 
-	if (MPU6050_Init(&hi2c2, 0xd0) != HAL_OK) {
-		printf("MPU6050: init error!\r\n");
-		for (;;)
-			;                    // остановка задачи
-	}
-	printf("MPU6050: init Ok  (adr 0x69)\r\n");
-
-	if (MPU6050_Init(&hi2c1, 0xd2) != HAL_OK) {
-		printf("MPU6050: init error!\r\n");
-		for (;;)
-			;                    // остановка задачи
-	}
-	printf("MPU6050: init Ok  (adr 0x69)\r\n");
-
+    if (MPU6050_Init(&hi2c1, 0xd2) != HAL_OK) {
+        printf("MPU6050: init error!\r\n");
+        for (;;); // остановка задачи
+    }
+    printf("MPU6050: init Ok (adr 0x69)\r\n");
 
     // === НАСТРОЙКИ ДЛЯ DC-2813C + 7 В ===
     float vm = 7.0f;
     driverMot0.voltage_power_supply = vm;
     driverMot0.voltage_limit = 7.0f;
-    motor0.pole_pairs     = 7;
-    motor0.voltage_limit  = 3.0f;
+    motor0.pole_pairs = 7;
+    motor0.voltage_limit = 3.0f;
     motor0.velocity_limit = 30.0f;
-    motor0.controller     = ControlType::velocity_openloop;
+    motor0.controller = ControlType::velocity_openloop;
 
     driverMot1.voltage_power_supply = vm;
     driverMot1.voltage_limit = 7.0f;
-    motor1.pole_pairs     = 7;
-    motor1.voltage_limit  = 3.0f;
+    motor1.pole_pairs = 7;
+    motor1.voltage_limit = 3.0f;
     motor1.velocity_limit = 30.0f;
-    motor1.controller     = ControlType::velocity_openloop;
+    motor1.controller = ControlType::velocity_openloop;
 
     driverMot2.voltage_power_supply = vm;
     driverMot2.voltage_limit = 7.0f;
-    motor2.pole_pairs     = 7;
-    motor2.voltage_limit  = 4.0f;
+    motor2.pole_pairs = 7;
+    motor2.voltage_limit = 4.0f;
     motor2.velocity_limit = 6.0f;
-    motor2.controller     = ControlType::velocity_openloop;
-
-
+    motor2.controller = ControlType::velocity_openloop;
 
     driverMot0.init();
     motor0.linkDriver(&driverMot0);
@@ -246,41 +255,39 @@ void MotorTask(void *argument)
     motor1.init();
     motor1.sensor = nullptr;
 
-//    driverMot2.init();
-//    motor2.linkDriver(&driverMot2);
-//    motor2.init();
-//    motor2.sensor = nullptr;
+    // driverMot2.init();
+    // motor2.linkDriver(&driverMot2);
+    // motor2.init();
+    // motor2.sensor = nullptr;
 
     motor0.disable();
     motor1.disable();
     osDelay(5000);
 
-    const float DEG_TO_RAD = 3.1415926535f / 180.0f;   // π/180
+    const float DEG_TO_RAD = 3.1415926535f / 180.0f; // π/180
 
+    // === Калибровка offset'ов гироскопов ===
     double sum1 = 0.0;
     double sum2 = 0.0;
+    int cnt = 20000;
 
-    float gyro1_y ;
-    float gyro2_z ;
-
-
-    int cnt =20000;
-    for (int i=0;i<cnt;i++)
-    {
-
-    	 MPU6050_ReadRaw(&hi2c2,0xd0, &mpu1_data);
-    	 MPU6050_ReadRaw(&hi2c1,0xd2, &mpu2_data);
-     	 sum1  += (double)(mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD); // pitch
-         sum2  += (double)(mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD); // yaw
-         osDelay(1);
-    }
-
-    sum1 = sum1/cnt;
-    sum2 = sum2/cnt;
-
-    printf(">sum1:%f\n",(float)sum1);
-    printf(">sum2:%f\n",(float)sum2);
-
+    uint32_t tick = osKernelGetTickCount();
+//    for (int i = 0; i < cnt; i++) {
+//        MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
+//        MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
+//
+//        sum1 += (double)(mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD);
+//        sum2 += (double)(mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD);
+//
+//        tick += 1;               // период 1 мс
+//        osDelayUntil(tick);
+//    }
+//
+//    sum1 = sum1 / cnt;
+//    sum2 = sum2 / cnt;
+//
+//    printf(">sum1:%f\n", (float)sum1);
+//    printf(">sum2:%f\n", (float)sum2);
 
     motor0.enable();
     motor1.enable();
@@ -288,38 +295,37 @@ void MotorTask(void *argument)
 
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
-
-    float target_vel = 0.0f;   // ← начинаем с комфортной скорости
+    // === Главный цикл с ГАРАНТИРОВАННЫМ периодом ===
+    float target_vel = 0.0f; // ← оставлено как в оригинале
     float inc = 0.002;
-    for(;;)
+
+    float gyro1_y;
+    float gyro2_z;
+
+    tick = osKernelGetTickCount();           // начальная метка времени
+    const uint32_t PERIOD_MS = 2;            // желаемый период 2 мс
+
+    for (;;)
     {
+        MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
+        MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
 
-    	 MPU6050_ReadRaw(&hi2c2,0xd0, &mpu1_data);
-    	 MPU6050_ReadRaw(&hi2c1,0xd2, &mpu2_data);
+        gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD; // pitch
+        gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD; // yaw
 
-		const float DEG_TO_RAD = 3.1415926535f / 180.0f;   // π/180
-		gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD; // pitch
-		gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD; // yaw
+        gyro1_y = Notch_Update(&gyro_notch, gyro1_y);
 
+        motor0.move(gyro1_y - sum1);   // pitch
+        motor1.move(-gyro2_z + sum2);  // yaw
 
-		motor0.move(gyro1_y - sum1);  //pitch
-		motor1.move(-gyro2_z +sum2);  //yaw
+        printf(">g1:%f\n", gyro1_y);
+        printf(">g2:%f\n", gyro2_z);
 
+        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
-		printf(">g1:%f\n",gyro1_y);
-		printf(">g2:%f\n",gyro2_z);
-
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-
-		osDelay(2);
-
-
+        tick += PERIOD_MS;          // увеличиваем на 2 тика
+        osDelayUntil(tick);         // ждём до абсолютного момента времени
     }
-
-
-
-
-
 }
 
 /**
@@ -427,7 +433,7 @@ int main(void)
     /* === FreeRTOS === */
     MX_FREERTOS_Init();               // инициализация объектов
     osKernelInitialize();             // ← ЯВНЫЙ вызов
-
+    Stabilization_Init();
     //MotorTask(NULL);
 
 
