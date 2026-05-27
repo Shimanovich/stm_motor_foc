@@ -24,6 +24,18 @@
 
 #include "mpu6050.h"
 #include "notch_filter.h"
+#include "fft.h"
+
+#define SAMPLES 128U          // должно быть степенью 2
+
+typedef struct {
+    float    data[SAMPLES];   // значения акселерометра
+    float    fs;              // реальная частота дискретизации (Гц)
+    uint32_t timestamp;       // метка времени (например, HAL_GetTick())
+    uint32_t reserved;        // выравнивание
+} AccelPacket_t;
+
+osMessageQueueId_t accelQueueHandle;
 
 #include <stdio.h>
 
@@ -49,6 +61,7 @@ void Error_Handler(void)
 
 // Глобальные/статические переменные
 NotchFilter gyro_notch;
+NotchFilter common_notch;
 float gyro_rate_filtered_rad_s = 0.0f;
 
 // В init (например, в main() или task init)
@@ -57,7 +70,9 @@ void Stabilization_Init(void)
     // fs — частота вызова фильтра (например 1000 Гц)
     // f_notch — частота вашего резонанса (измерьте осциллографом/FFT)
     // Q — добротность (обычно 5…30, чем выше — уже режекция)
-    Notch_Init(&gyro_notch, 500.0f, 18.8f, 30.0f);   // пример: 85 Гц, Q=10
+    Notch_Init(&gyro_notch, 1000.0f, 18.8f, 30.0f);   // пример: 85 Гц, Q=10
+    Notch_Init(&common_notch, 1000.0f, 21.8f, 30.0f);   // пример: 85 Гц, Q=10
+
 }
 
 /* Полная реализация SystemClock_Config (HSE 8MHz → 72MHz) */
@@ -205,10 +220,54 @@ void MotorTask(void *argument);
 
 /* USER CODE BEGIN 0 */
 
+static float vReal[SAMPLES];
+static float vImag[SAMPLES];
+
+void StartFFT_Task(void *argument)
+{
+    AccelPacket_t packet;
+    osStatus_t status;
+
+    printf("\r\n=== FFT Task started (CMSIS-RTOS2) ===\r\n");
+
+    for (;;) {
+        // Ждём пакет из очереди (таймаут 1000 мс)
+        status = osMessageQueueGet(accelQueueHandle, &packet, NULL, osWaitForever);
+
+        if (status == osOK) {
+            // Копируем данные в буферы FFT
+            for (uint16_t i = 0; i < SAMPLES; i++) {
+                vReal[i] = packet.data[i];
+                vImag[i] = 0.0f;
+            }
+
+            // Предобработка
+            dc_removal(vReal, SAMPLES);
+            window_hamming(vReal, SAMPLES);
+
+            // FFT
+            fft(vReal, vImag, SAMPLES);
+            complex_to_magnitude(vReal, SAMPLES);
+
+            // Поиск пика
+            float peak_freq = find_peak_frequency(vReal, packet.fs, SAMPLES);
+
+//            // Вывод результата
+            printf("[%lu] Peak frequency: %.2f Hz  (fs=%.1f Hz)\r\n",
+                    packet.timestamp, peak_freq, packet.fs);
+
+        }
+    }
+}
+
+
 void MotorTask(void *argument)
 {
     I2C_ScanExternalBus(&hi2c2);
     I2C_ScanExternalBus(&hi2c1);
+
+    AccelPacket_t pkt;
+    int pkt_pos =0;;
 
     if (MPU6050_Init(&hi2c2, 0xd0) != HAL_OK) {
         printf("MPU6050: init error!\r\n");
@@ -303,23 +362,44 @@ void MotorTask(void *argument)
     float gyro2_z;
 
     tick = osKernelGetTickCount();           // начальная метка времени
-    const uint32_t PERIOD_MS = 2;            // желаемый период 2 мс
+    const uint32_t PERIOD_MS = 1;            // желаемый период 2 мс
 
     for (;;)
     {
         MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
         MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
 
-        gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD; // pitch
-        gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD; // yaw
+        gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD ; // pitch
+        gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD ; // yaw
 
-        gyro1_y = Notch_Update(&gyro_notch, gyro1_y);
+        //gyro1_y = Notch_Update(&gyro_notch, gyro1_y);
 
-        motor0.move(gyro1_y - sum1);   // pitch
-        motor1.move(-gyro2_z + sum2);  // yaw
+        float vel_cmd = gyro1_y - sum1;
+        //vel_cmd = Notch_Update(&common_notch, vel_cmd);
 
-        printf(">g1:%f\n", gyro1_y);
-        printf(">g2:%f\n", gyro2_z);
+
+
+
+
+
+        motor0.move(vel_cmd);   // pitch
+        motor1.move(-(gyro2_z+ sum2) );  // yaw
+
+
+        pkt.data[pkt_pos]=gyro1_y;
+        pkt_pos++;
+
+        if (pkt_pos>SAMPLES)
+        {
+        	pkt_pos=0;
+        	pkt.timestamp = HAL_GetTick();
+        	pkt.fs = 1000;
+        	osMessageQueuePut(accelQueueHandle, &pkt, 0U, 0U);
+        }
+
+
+        //printf(">g1:%f\n", gyro1_y);
+        //printf(">g2:%f\n", gyro2_z);
 
         HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
@@ -436,13 +516,28 @@ int main(void)
     Stabilization_Init();
     //MotorTask(NULL);
 
+    // Создаём очередь (максимум 2 пакетов)
+        accelQueueHandle = osMessageQueueNew(2U, sizeof(AccelPacket_t), NULL);
 
+        // Создаём задачу анализа
+
+            const osThreadAttr_t fftTask_attributes = {
+                .name       = "FFT_Task",
+                .stack_size = 2048,
+                .priority   = (osPriority_t) osPriorityLow1
+            };
+
+
+    osThreadNew(StartFFT_Task, NULL, &fftTask_attributes);
 
     const osThreadAttr_t motorTask_attributes = {
         .name       = "MotorTask",
         .stack_size = 3072,                    // 3 КБ — достаточно
         .priority   = (osPriority_t) osPriorityAboveNormal
     };
+
+
+
 
     motorTaskHandle = osThreadNew(MotorTask, NULL, &motorTask_attributes);
     if (motorTaskHandle == NULL) {

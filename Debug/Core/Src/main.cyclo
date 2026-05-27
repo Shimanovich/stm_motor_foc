@@ -1,12 +1,13 @@
-../Core/Src/main.cpp:37:5:int _write(int, char*, int)	1
-../Core/Src/main.cpp:43:6:void Error_Handler()	1
-../Core/Src/main.cpp:55:6:void Stabilization_Init()	1
-../Core/Src/main.cpp:64:6:void SystemClock_Config()	3
-../Core/Src/main.cpp:133:6:void MPU6050_Task(void*)	4
-../Core/Src/main.cpp:208:6:void MotorTask(void*)	3
-../Core/Src/main.cpp:335:6:void I2C_ScanExternalBus(I2C_HandleTypeDef*)	5
-../Core/Src/main.cpp:374:6:void I2CScanTask(void*)	1
-../Core/Src/main.cpp:384:6:void Test_Mot0_PWM()	1
-../Core/Src/main.cpp:419:5:int main()	2
-../Core/Src/main.cpp:484:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:484:1:cpp)	1
+../Core/Src/main.cpp:49:5:int _write(int, char*, int)	1
+../Core/Src/main.cpp:55:6:void Error_Handler()	1
+../Core/Src/main.cpp:68:6:void Stabilization_Init()	1
+../Core/Src/main.cpp:79:6:void SystemClock_Config()	3
+../Core/Src/main.cpp:148:6:void MPU6050_Task(void*)	4
+../Core/Src/main.cpp:226:6:void StartFFT_Task(void*)	3
+../Core/Src/main.cpp:264:6:void MotorTask(void*)	4
+../Core/Src/main.cpp:415:6:void I2C_ScanExternalBus(I2C_HandleTypeDef*)	5
+../Core/Src/main.cpp:454:6:void I2CScanTask(void*)	1
+../Core/Src/main.cpp:464:6:void Test_Mot0_PWM()	1
+../Core/Src/main.cpp:499:5:int main()	2
+../Core/Src/main.cpp:579:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:579:1:cpp)	1
