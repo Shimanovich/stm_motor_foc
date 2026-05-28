@@ -31,22 +31,33 @@ void fft(float *real, float *imag, uint16_t n)
         j += m;
     }
 
+    float theta;
+    float wpr;
+    float wr;
+    float wpi;
+    float tempr;
+    float tempi;
+    float wtemp;
+    float wi;
+
     // Danielson-Lanczos
     for (uint16_t mmax = 2; mmax < n; mmax <<= 1) {
-        float theta = -2.0 * M_PI / mmax;
-        float wpr = cos(theta), wpi = sin(theta);
-        float wr = 1.0, wi = 0.0;
+        theta = -2.0 * M_PI / mmax;
+        wpr = cos(theta);
+        wpi = sin(theta);
+        wr = 1.0;
+        wi = 0.0;
         for (uint16_t m = 0; m < mmax; m += 2) {
             for (uint16_t i = m; i < n; i += mmax) {
                 uint16_t j = i + (mmax >> 1);
-                float tempr = wr * real[j] - wi * imag[j];
-                float tempi = wr * imag[j] + wi * real[j];
+                tempr = wr * real[j] - wi * imag[j];
+                tempi = wr * imag[j] + wi * real[j];
                 real[j] = real[i] - tempr;
                 imag[j] = imag[i] - tempi;
                 real[i] += tempr;
                 imag[i] += tempi;
             }
-            float wtemp = wr;
+            wtemp = wr;
             wr = wr * wpr - wi * wpi;
             wi = wi * wpr + wtemp * wpi;
         }
