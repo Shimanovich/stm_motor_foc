@@ -83,16 +83,40 @@ void NMI_Handler(void)
 /**
   * @brief This function handles Hard fault interrupt.
   */
-void HardFault_Handler(void)
-{
-  /* USER CODE BEGIN HardFault_IRQn 0 */
+// Глобальные переменные для просмотра в отладчике
+volatile uint32_t stacked_r0, stacked_r1, stacked_r2, stacked_r3;
+volatile uint32_t stacked_r12, stacked_lr, stacked_pc, stacked_psr;
+volatile uint32_t cfsr, hfsr, mmfar, bfar;
 
-  /* USER CODE END HardFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
-  }
+void hard_fault_handler_c(unsigned long *hardfault_args) {
+    // Сохранение регистров стека
+    stacked_r0  = hardfault_args[0];
+    stacked_r1  = hardfault_args[1];
+    stacked_r2  = hardfault_args[2];
+    stacked_r3  = hardfault_args[3];
+    stacked_r12 = hardfault_args[4];
+    stacked_lr  = hardfault_args[5];
+    stacked_pc  = hardfault_args[6];   // <-- адрес инструкции, где произошёл fault
+    stacked_psr = hardfault_args[7];
+
+    // Чтение регистров SCB
+    cfsr  = SCB->CFSR;   // 0xE000ED28
+    hfsr  = SCB->HFSR;   // 0xE000ED2C
+    mmfar = SCB->MMFAR;  // 0xE000ED34 (валидно, если MMARVALID = 1)
+    bfar  = SCB->BFAR;   // 0xE000ED38 (валидно, если BFARVALID = 1)
+
+    // Вывод (выберите один способ)
+#ifdef USE_UART
+    // Пример через UART (замените на вашу инициализацию)
+    printf("HardFault!\r\nPC=0x%08lX  LR=0x%08lX\r\n", stacked_pc, stacked_lr);
+    printf("CFSR=0x%08lX  HFSR=0x%08lX\r\n", cfsr, hfsr);
+    printf("MMFAR=0x%08lX  BFAR=0x%08lX\r\n", mmfar, bfar);
+#endif
+
+    // Бесконечный цикл (или NVIC_SystemReset())
+    while(1) {
+        // Можно моргать LED для индикации
+    }
 }
 
 /**

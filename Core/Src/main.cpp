@@ -40,6 +40,131 @@ typedef struct {
 
 
 
+
+//void init(void) {
+//    zc_sliding_init(&zc, sample_buffer, BUFFER_SIZE, WINDOW_DURATION, 0.08f, SAMPLE_RATE);
+//}
+//
+//void process_sample(float adc_value) {
+//    float freq = zc_sliding_update(&zc, adc_value, SAMPLE_RATE);
+//
+//    if (freq > 0.1f) {
+//        // используем freq
+//    }
+//}
+
+typedef struct {
+    // Кольцевой буфер для хранения отсчётов
+    float* buffer;              // указатель на массив
+    uint32_t buffer_size;       // размер буфера (должен быть >= samples_in_window)
+    uint32_t head;              // индекс для записи нового значения
+
+    uint32_t sample_count;      // общее количество принятых отсчётов
+    uint32_t window_samples;    // количество отсчётов в окне (фиксированная длительность)
+
+    uint32_t zero_crossings;    // текущее количество пересечений в окне
+    float prev_sample;          // предыдущее значение (для детекции)
+
+    float last_frequency;       // последняя рассчитанная частота
+    float hysteresis;           // гистерезис
+
+    float window_duration;      // длительность окна в секундах (например 0.5f)
+} ZeroCrossingSlidingWindow;
+
+
+#define WINDOW_DURATION  1.0f     // 0.5 секунды
+#define SAMPLE_RATE     500.0f
+#define BUFFER_SIZE     1024      // должно быть больше чем WINDOW_DURATION * SAMPLE_RATE
+
+float sample_buffer[BUFFER_SIZE];
+ZeroCrossingSlidingWindow zc = {0};
+
+
+void zc_sliding_init(ZeroCrossingSlidingWindow* state,
+                     float* buffer,
+                     uint32_t buffer_size,
+                     float window_duration_sec,
+                     float hysteresis,
+                     float sample_rate)
+{
+    state->buffer = buffer;
+    state->buffer_size = buffer_size;
+    state->window_samples = (uint32_t)(window_duration_sec * sample_rate + 0.5f);
+
+    // Защита от слишком большого окна
+    if (state->window_samples > buffer_size) {
+        state->window_samples = buffer_size;
+    }
+
+    state->head = 0;
+    state->sample_count = 0;
+    state->zero_crossings = 0;
+    state->prev_sample = 0.0f;
+    state->last_frequency = 0.0f;
+    state->hysteresis = hysteresis;
+    state->window_duration = window_duration_sec;
+
+    // Очистка буфера
+    for (uint32_t i = 0; i < buffer_size; i++) {
+        state->buffer[i] = 0.0f;
+    }
+}
+
+/**
+ * Обновление по одному новому отсчёту
+ *
+ * @param state       - состояние
+ * @param new_sample  - новое значение сигнала
+ * @param sample_rate - частота дискретизации
+ * @return            - рассчитанная частота в Гц
+ */
+float zc_sliding_update(ZeroCrossingSlidingWindow* state, float new_sample, float sample_rate)
+{
+    if (sample_rate <= 0.0f || state->window_samples < 10) {
+        return 0.0f;
+    }
+
+    // Добавляем новое значение в кольцевой буфер
+    uint32_t old_index = state->head;
+    float old_sample = state->buffer[old_index];        // значение, которое вытесняем
+
+    state->buffer[state->head] = new_sample;
+    state->head = (state->head + 1) % state->buffer_size;
+    state->sample_count++;
+
+    // === Обработка пересечений при добавлении нового отсчёта ===
+    if ((state->prev_sample <= -state->hysteresis && new_sample > state->hysteresis) ||
+        (state->prev_sample >= state->hysteresis && new_sample < -state->hysteresis)) {
+        state->zero_crossings++;
+    }
+
+    // === Удаляем пересечения, которые вышли за пределы окна ===
+    if (state->sample_count > state->window_samples) {
+        // Проверяем, было ли пересечение на вытесненном значении
+        float next_sample = state->buffer[(old_index + 1) % state->buffer_size]; // следующее после вытесненного
+
+        if ((old_sample <= -state->hysteresis && next_sample > state->hysteresis) ||
+            (old_sample >= state->hysteresis && next_sample < -state->hysteresis)) {
+            if (state->zero_crossings > 0) {
+                state->zero_crossings--;
+            }
+        }
+    }
+
+    state->prev_sample = new_sample;
+
+    // Расчёт частоты (только когда окно заполнено)
+    if (state->sample_count >= state->window_samples) {
+        float periods = state->zero_crossings / 2.0f;
+        float frequency = periods / state->window_duration;
+
+        state->last_frequency = frequency;
+    }
+
+    return state->last_frequency;
+}
+
+
 #include <stdio.h>
 
 /* USER CODE END Includes */
@@ -98,8 +223,8 @@ void Stabilization_Init(void)
     // fs — частота вызова фильтра (например 1000 Гц)
     // f_notch — частота вашего резонанса (измерьте осциллографом/FFT)
     // Q — добротность (обычно 5…30, чем выше — уже режекция)
-    Notch_Init(&gyro_notch, 1000.0f, 18.8f, 30.0f);   // пример: 85 Гц, Q=10
-    Notch_Init(&common_notch, 1000.0f, 21.8f, 30.0f);   // пример: 85 Гц, Q=10
+    Notch_Init(&gyro_notch, 500.0f, 104.0f, 30.0f);   // пример: 85 Гц, Q=10
+    Notch_Init(&common_notch, 1000.0f, 140.8f, 30.0f);   // пример: 85 Гц, Q=10
 
 }
 
@@ -248,8 +373,8 @@ void MotorTask(void *argument);
 
 /* USER CODE BEGIN 0 */
 
-static float vReal[SAMPLES];
-static float vImag[SAMPLES];
+float vReal[SAMPLES];
+float vImag[SAMPLES];
 
 
 AccelPacket_t* pkt ;
@@ -268,7 +393,7 @@ void StartFFT_Task(void *argument)
                                               &id,
                                               NULL,
                                               osWaitForever);
-
+    	pkt = &QueueStorageBuffer[id];
         if (status == osOK) {
             // === Обработка FFT ===
             for (uint16_t i = 0; i < SAMPLES; i++) {
@@ -276,11 +401,11 @@ void StartFFT_Task(void *argument)
                 vImag[i] = 0.0f;
             }
 
-        	pkt = &QueueStorageBuffer[id];
+
             dc_removal(vReal, SAMPLES);
             window_hamming(vReal, SAMPLES);
-            fft(pkt->data, vImag, SAMPLES);
-            complex_to_magnitude(pkt->data, SAMPLES);
+            fft(vReal, vImag, SAMPLES);
+            complex_to_magnitude(vReal, SAMPLES);
 
             float peak_freq = find_peak_frequency(vReal, pkt->fs, SAMPLES);
 
@@ -315,6 +440,7 @@ void MotorTask(void *argument)
     printf("MPU6050: init Ok (adr 0x69)\r\n");
 
     while (MPU6050_Init(&hi2c1, 0xd2) != HAL_OK) {
+    	 I2C_ScanExternalBus(&hi2c1);
         printf("MPU6050: init error!\r\n");
        // for (;;); // остановка задачи
     }
@@ -326,7 +452,7 @@ void MotorTask(void *argument)
     driverMot0.voltage_limit = 7.0f;
     motor0.pole_pairs = 7;
     motor0.voltage_limit = 3.0f;
-    motor0.velocity_limit = 30.0f;
+    motor0.velocity_limit = 30.1f;
     motor0.controller = ControlType::velocity_openloop;
 
     driverMot1.voltage_power_supply = vm;
@@ -340,7 +466,7 @@ void MotorTask(void *argument)
     driverMot2.voltage_limit = 7.0f;
     motor2.pole_pairs = 7;
     motor2.voltage_limit = 4.0f;
-    motor2.velocity_limit = 6.0f;
+    motor2.velocity_limit = 30.0f;
     motor2.controller = ControlType::velocity_openloop;
 
     driverMot0.init();
@@ -410,67 +536,75 @@ void MotorTask(void *argument)
 
     for (;;)
     {
-    	if (pkt == NULL)
-    	{
-
-    		status =  osMessageQueueGet(data_from_calc_QueueHandle, &id, NULL, 0); // no wait
-    		if (status == osOK)
-    		{
-    			pkt_pos = 0;
-    		}
-    		else
-    		{
-    			pkt_pos = 0;
-    			pkt = &QueueStorageBuffer[id];
-    		}
-    	}
+//    	if (pkt == NULL)
+//    	{
+//
+//    		status =  osMessageQueueGet(data_from_calc_QueueHandle, &id, NULL, 0); // no wait
+//    		if (status == osOK)
+//    		{
+//    			pkt_pos = 0;
+//    		}
+//    		else
+//    		{
+//    			pkt_pos = 0;
+//    			pkt = &QueueStorageBuffer[id];
+//    		}
+//    	}
 
 
         MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
-        MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
-
         gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD ; // pitch
-        gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD ; // yaw
-
-        //gyro1_y = Notch_Update(&gyro_notch, gyro1_y);
-
+       // gyro1_y = Notch_Update(&gyro_notch, gyro1_y);
         float vel_cmd = gyro1_y - sum1;
         //vel_cmd = Notch_Update(&common_notch, vel_cmd);
-
-
-
-
-
-
         motor0.move(vel_cmd);   // pitch
+
+
+        MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
+        gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD ; // yaw
         motor1.move(-(gyro2_z+ sum2) );  // yaw
 
+        static int cnt =0;
+        float freq = zc_sliding_update(&zc, vel_cmd, SAMPLE_RATE);
 
-        if (pkt!=NULL)
-        {
+            if (freq > 0.1f) {
+            	cnt++;
 
-        	 if (pkt_pos >= SAMPLES)
-        	 {
-        		 pkt_pos = 0;
-        		 pkt->timestamp = HAL_GetTick();
-        		 pkt->fs = 500.0f;
+            	if (cnt>128)
+            	{
 
-        		 osStatus_t put_status = osMessageQueuePut(data_to_calc_QueueHandle, &id, 0U, 0U);
+            		printf("%.2f\r\n",freq);
+            		cnt= 0;
+            	}
+            	//printf("freq %.2f\r\n",freq);
+            	//printf(">g1:%f\n", freq);
+            }
 
-        		 if (put_status != osOK) {
-					printf("Queue put failed: %d (full?)\r\n", put_status);
-
-				} else {
-					printf("Queue put OK\r\n");
-				}
-				pkt = NULL;
-        	 }
-        	 else
-        	 {
-            	 pkt->data[pkt_pos]=gyro1_y;
-            	 pkt_pos++;
-        	 }
-        }
+//        if (pkt!=NULL)
+//        {
+//
+//        	 if (pkt_pos >= SAMPLES)
+//        	 {
+//        		 pkt_pos = 0;
+//        		 pkt->timestamp = HAL_GetTick();
+//        		 pkt->fs = 500.0f;
+//
+//        		 osStatus_t put_status = osMessageQueuePut(data_to_calc_QueueHandle, &id, 0U, 0U);
+//
+//        		 if (put_status != osOK) {
+//					printf("Queue put failed: %d (full?)\r\n", put_status);
+//
+//				} else {
+//					printf("Queue put OK\r\n");
+//				}
+//				pkt = NULL;
+//        	 }
+//        	 else
+//        	 {
+//            	 pkt->data[pkt_pos]=gyro1_y;
+//            	 pkt_pos++;
+//        	 }
+//        }
 
 
 
@@ -600,36 +734,38 @@ int main(void)
     //MotorTask(NULL);
 
 
-    data_to_calc_QueueHandle = osMessageQueueNew(FREQ_BUF_CNT, sizeof(AccelPacket_t*), NULL);
-    data_from_calc_QueueHandle = osMessageQueueNew(FREQ_BUF_CNT, sizeof(AccelPacket_t*), NULL);
+//    data_to_calc_QueueHandle = osMessageQueueNew(FREQ_BUF_CNT, sizeof(AccelPacket_t*), NULL);
+//    data_from_calc_QueueHandle = osMessageQueueNew(FREQ_BUF_CNT, sizeof(AccelPacket_t*), NULL);
 
 
-    // put all ptrs
-    for (int i=0;i<FREQ_BUF_CNT;i++)
-    {
-    	QueueStorageBufferPtrs[i] = i;
-    	osMessageQueuePut(data_from_calc_QueueHandle, &QueueStorageBufferPtrs[i], 0U, 0U);  // ← &p !
-    }
+//    // put all ptrs
+//    for (int i=0;i<FREQ_BUF_CNT;i++)
+//    {
+//    	QueueStorageBufferPtrs[i] = i;
+//    	osMessageQueuePut(data_from_calc_QueueHandle, &QueueStorageBufferPtrs[i], 0U, 0U);  // ← &p !
+//    }
 
 
+    zc_sliding_init(&zc, sample_buffer, BUFFER_SIZE, WINDOW_DURATION, 0.08f, SAMPLE_RATE);
 
-
-
-
-
-
-	// Создаём задачу анализа
-	const osThreadAttr_t fftTask_attributes = {
-			.name = "FFT_Task",
-			.stack_size =5000,
-			.priority = (osPriority_t) osPriorityNormal };
-
-	osThreadNew(StartFFT_Task, NULL, &fftTask_attributes);
 
 	const osThreadAttr_t motorTask_attributes = {
 			.name = "MotorTask",
-			.stack_size = 3072,
+			.stack_size = 8000,
 			.priority = (osPriority_t) osPriorityNormal };
+
+	osThreadNew(MotorTask, NULL, &motorTask_attributes);
+
+
+//	// Создаём задачу анализа
+//	const osThreadAttr_t fftTask_attributes = {
+//			.name = "FFT_Task",
+//			.stack_size =5000,
+//			.priority = (osPriority_t) osPriorityNormal };
+//
+//	osThreadNew(StartFFT_Task, NULL, &fftTask_attributes);
+
+
 
 	motorTaskHandle = osThreadNew(MotorTask, NULL, &motorTask_attributes);
 	if (motorTaskHandle == NULL) {
