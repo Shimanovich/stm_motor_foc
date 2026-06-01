@@ -25,6 +25,7 @@
 #include "mpu6050.h"
 #include "notch_filter.h"
 #include "fft.h"
+#include "common/pid.h"   // <-- Добавлено PID из проекта
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -39,6 +40,7 @@ typedef struct {
     uint32_t reserved;        // выравнивание
 } AccelPacket_t;
 
+<<<<<<< HEAD
 // Пример начальных коэффициентов (подбирайте экспериментально!)
 static PIDController pid_pitch(0.1f, 0.0f, 0.0f, 500.0f, 25.0f);  // P,I,D,ramp,limit
 static PIDController   pid_yaw(1.0f, 0.0f, 0.0f, 500.0f, 25.0f);
@@ -427,143 +429,49 @@ void StartFFT_Task(void *argument)
     }
 }
 
+=======
+// ... (остальной код без изменений до MotorTask) 
+
+// Вставьте это перед определением MotorTask или глобально
+static PIDController pid_pitch(35.0f, 12.0f, 1.5f, 5000.0f, 35.0f);
+static PIDController pid_yaw(28.0f, 8.0f, 1.0f, 5000.0f, 35.0f);
+>>>>>>> b7d76bef72ef943cc319f8292e3bfd4036785818
 
 void MotorTask(void *argument)
 {
-    I2C_ScanExternalBus(&hi2c2);
-    I2C_ScanExternalBus(&hi2c1);
-
-    static AccelPacket_t * pkt = NULL;   // static + обнуление
-    static uint16_t pkt_pos = 0;
-
-    if (MPU6050_Init(&hi2c2, 0xd0) != HAL_OK) {
-        printf("MPU6050: init error!\r\n");
-        for (;;); // остановка задачи
-    }
-    printf("MPU6050: init Ok (adr 0x69)\r\n");
-
-    while (MPU6050_Init(&hi2c1, 0xd2) != HAL_OK) {
-    	 I2C_ScanExternalBus(&hi2c1);
-        printf("MPU6050: init error!\r\n");
-       // for (;;); // остановка задачи
-    }
-    printf("MPU6050: init Ok (adr 0x69)\r\n");
-
-    // === НАСТРОЙКИ ДЛЯ DC-2813C + 7 В ===
-    float vm = 7.0f;
-    driverMot0.voltage_power_supply = vm;
-    driverMot0.voltage_limit = 7.0f;
-    motor0.pole_pairs = 7;
-    motor0.voltage_limit = 3.0f;
-    motor0.velocity_limit = 30.1f;
-    motor0.controller = ControlType::velocity_openloop;
-
-    driverMot1.voltage_power_supply = vm;
-    driverMot1.voltage_limit = 7.0f;
-    motor1.pole_pairs = 7;
-    motor1.voltage_limit = 3.0f;
-    motor1.velocity_limit = 30.0f;
-    motor1.controller = ControlType::velocity_openloop;
-
-    driverMot2.voltage_power_supply = vm;
-    driverMot2.voltage_limit = 7.0f;
-    motor2.pole_pairs = 7;
-    motor2.voltage_limit = 4.0f;
-    motor2.velocity_limit = 30.0f;
-    motor2.controller = ControlType::velocity_openloop;
-
-    driverMot0.init();
-    motor0.linkDriver(&driverMot0);
-    motor0.init();
-    motor0.sensor = nullptr;
-
-    driverMot1.init();
-    motor1.linkDriver(&driverMot1);
-    motor1.init();
-    motor1.sensor = nullptr;
-
-    // driverMot2.init();
-    // motor2.linkDriver(&driverMot2);
-    // motor2.init();
-    // motor2.sensor = nullptr;
-
-    motor0.disable();
-    motor1.disable();
-    osDelay(5000);
-
-    const float DEG_TO_RAD = 3.1415926535f / 180.0f; // π/180
-
-    // === Калибровка offset'ов гироскопов ===
-    double sum1 = 0.0;
-    double sum2 = 0.0;
-    int cnt = 20000;
-
-    uint32_t tick = osKernelGetTickCount();
-//    for (int i = 0; i < cnt; i++) {
-//        MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
-//        MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
-//
-//        sum1 += (double)(mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD);
-//        sum2 += (double)(mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD);
-//
-//        tick += 1;               // период 1 мс
-//        osDelayUntil(tick);
-//    }
-//
-//    sum1 = sum1 / cnt;
-//    sum2 = sum2 / cnt;
-//
-//    printf(">sum1:%f\n", (float)sum1);
-//    printf(">sum2:%f\n", (float)sum2);
+    // ... (весь код инициализации MPU, моторов, калибровки sum1/sum2 остаётся)
 
     motor0.enable();
     motor1.enable();
-    //motor2.enable();
 
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-
-    // === Главный цикл с ГАРАНТИРОВАННЫМ периодом ===
-    float target_vel = 0.0f; // ← оставлено как в оригинале
-    float inc = 0.002;
 
     float gyro1_y;
     float gyro2_z;
 
-	uint8_t id;
-
-    tick = osKernelGetTickCount();           // начальная метка времени
-    const uint32_t PERIOD_MS = 2;            // желаемый период 2 мс
-
-
-    osStatus_t status;
+    uint32_t tick = osKernelGetTickCount();           
+    const uint32_t PERIOD_MS = 2;            
 
     for (;;)
     {
-//    	if (pkt == NULL)
-//    	{
-//
-//    		status =  osMessageQueueGet(data_from_calc_QueueHandle, &id, NULL, 0); // no wait
-//    		if (status == osOK)
-//    		{
-//    			pkt_pos = 0;
-//    		}
-//    		else
-//    		{
-//    			pkt_pos = 0;
-//    			pkt = &QueueStorageBuffer[id];
-//    		}
-//    	}
-
-
         MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
+<<<<<<< HEAD
         gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD ; // pitch
         // Для pitch (мотор0)
         float error_pitch = 0.0f - gyro1_y;           // setpoint = 0 (стабилизация скорости)
         float vel_cmd_pitch = pid_pitch(error_pitch); // ← через PID
         motor0.move(vel_cmd_pitch);
+=======
+        gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * (3.1415926535f / 180.0f) ; // pitch
+        // gyro1_y = Notch_Update(&gyro_notch, gyro1_y);   // можно оставить
+>>>>>>> b7d76bef72ef943cc319f8292e3bfd4036785818
 
+        float error_pitch = 0.0f - (gyro1_y - sum1);  // setpoint = 0
+        float vel_cmd_pitch = pid_pitch(error_pitch);
+        motor0.move(vel_cmd_pitch);
 
         MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
+<<<<<<< HEAD
         gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD ; // yaw
         float error_yaw = 0.0f - gyro2_z;
         float vel_cmd_yaw = pid_yaw(error_yaw);
@@ -621,200 +529,20 @@ void MotorTask(void *argument)
         //printf(">g2:%f\n", gyro2_z);
 
         //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+=======
+        gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * (3.1415926535f / 180.0f) ; // yaw
+        float error_yaw = 0.0f - (gyro2_z + sum2);
+        float vel_cmd_yaw = pid_yaw(error_yaw);
+        motor1.move(vel_cmd_yaw);  // знак может потребовать корректировки
+
+        // остальной код (zero crossing, delay и т.д.)
+>>>>>>> b7d76bef72ef943cc319f8292e3bfd4036785818
 
         tick += PERIOD_MS;
-
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
         osDelayUntil(tick);
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-
-
     }
 }
 
-/**
- * @brief Сканирует I2C-шину и выводит все найденные устройства
- * @param hi2c  - указатель на обработчик I2C (например, &hi2c1 или &hi2c2)
- */
-void I2C_ScanExternalBus(I2C_HandleTypeDef *hi2c)
-{
-    if (hi2c == NULL)
-    {
-        printf("Error: hi2c == NULL\r\n");
-        return;
-    }
-
-    printf("=== SCAN I2C BUS ===\r\n");
-    printf("Devs addrs (7-bit):\r\n");
-
-    uint8_t found = 0;
-    uint32_t start_tick = HAL_GetTick();
-
-    for (uint8_t addr = 1; addr < 128; addr++)   // 0x01 .. 0x7F
-    {
-        // Проверяем наличие устройства (3 попытки, таймаут 100 мс)
-        if (HAL_I2C_IsDeviceReady(hi2c, (addr << 1), 3, 100) == HAL_OK)
-        {
-            printf("  find: 0x%02X  (0x%02X)\r\n", addr, (addr << 1));
-            found++;
-        }
-
-        // Небольшая пауза, чтобы не забивать шину
-        osDelay(1);
-    }
-
-    uint32_t duration_ms = HAL_GetTick() - start_tick;
-
-    if (found == 0)
-        printf("  No devs find!\r\n");
-    else
-        printf("  find devs : %d\r\n", found);
-
-    printf("end of scan  %lu ms\r\n", duration_ms);
-    printf("====================================\r\n\r\n");
-}
-
-
-void I2CScanTask(void *argument)
-{
-    while (1)
-    {
-        I2C_ScanExternalBus(&hi2c1);   // ваш hi2c
-        I2C_ScanExternalBus(&hi2c2);   // ваш hi2c
-        osDelay(10000);                // повтор каждые 10 сек (или удалите цикл)
-    }
-}
-
-void Test_Mot0_PWM(void)
-{
-    // Запускаем PWM (на всякий случай)
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // PA7  = TIM3_CH2
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // PB0  = TIM3_CH3
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // PB1  = TIM3_CH4
-
-    const uint16_t period = htim3.Init.Period;           // обычно 65535
-    uint16_t duty = (uint16_t)(period * 0.30f);          // 30% — начинаем с этого
-
-    while (1)
-    {
-        // Фиксированная позиция (ротор должен сильно дёрнуться и удерживаться)
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, duty);   // Phase A
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);      // Phase B
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);      // Phase C
-
-        HAL_Delay(2000);   // держим 2 секунды
-
-        // Меняем позицию (чтобы увидеть, что мотор реагирует)
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, duty);
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);
-
-        HAL_Delay(2000);
-
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, duty);
-
-        HAL_Delay(2000);
-    }
-}
-/* USER CODE END 0 */
-
-int main(void)
-{
-    HAL_Init();
-    SystemClock_Config();
-
-    MX_GPIO_Init();
-    MX_TIM2_Init();
-    MX_TIM3_Init();
-    MX_TIM4_Init();
-    MX_I2C2_Init();
-    MX_I2C1_Init();
-    MX_USART3_UART_Init();
-
-
-    /* === FreeRTOS === */
-    MX_FREERTOS_Init();               // инициализация объектов
-    osKernelInitialize();             // ← ЯВНЫЙ вызов
-    Stabilization_Init();
-    //MotorTask(NULL);
-
-
-//    data_to_calc_QueueHandle = osMessageQueueNew(FREQ_BUF_CNT, sizeof(AccelPacket_t*), NULL);
-//    data_from_calc_QueueHandle = osMessageQueueNew(FREQ_BUF_CNT, sizeof(AccelPacket_t*), NULL);
-
-
-//    // put all ptrs
-//    for (int i=0;i<FREQ_BUF_CNT;i++)
-//    {
-//    	QueueStorageBufferPtrs[i] = i;
-//    	osMessageQueuePut(data_from_calc_QueueHandle, &QueueStorageBufferPtrs[i], 0U, 0U);  // ← &p !
-//    }
-
-
-    zc_sliding_init(&zc, sample_buffer, BUFFER_SIZE, WINDOW_DURATION, 0.08f, SAMPLE_RATE);
-
-
-	const osThreadAttr_t motorTask_attributes = {
-			.name = "MotorTask",
-			.stack_size = 8000,
-			.priority = (osPriority_t) osPriorityNormal };
-
-	osThreadNew(MotorTask, NULL, &motorTask_attributes);
-
-
-//	// Создаём задачу анализа
-//	const osThreadAttr_t fftTask_attributes = {
-//			.name = "FFT_Task",
-//			.stack_size =5000,
-//			.priority = (osPriority_t) osPriorityNormal };
-//
-//	osThreadNew(StartFFT_Task, NULL, &fftTask_attributes);
-
-
-
-	motorTaskHandle = osThreadNew(MotorTask, NULL, &motorTask_attributes);
-	if (motorTaskHandle == NULL) {
-		// быстрый красный — задача не создана
-		while (1) {
-			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
-			osDelay(80);
-		}
-	}
-
-
-//    // Атрибуты задачи (стиль CMSIS-RTOS2)
-//    const osThreadAttr_t MPU6050Task_attributes = {
-//      .name       = "MPU6050",
-//      .stack_size = 512 * 4,          // 2 КБ стек (printf любит память)
-//      .priority   = osPriorityHigh,   // или osPriorityNormal / osPriorityRealtime — выберите под вашу систему
-//    };
-//
-//    // Создание задачи (RTOS-стиль)
-//    osThreadId_t MPU6050TaskHandle = osThreadNew(MPU6050_Task, NULL, &MPU6050Task_attributes);
-
-//    // === НОВАЯ ЗАДАЧА ДЛЯ СКАНИРОВАНИЯ I2C ===
-//        osThreadId_t I2CScanTaskHandle;
-//        const osThreadAttr_t I2CScanTask_attributes = {
-//            .name = "I2CScanTask",
-//            .stack_size = 512,        // 0.5 КБ стек (достаточно)
-//            .priority = (osPriority_t) osPriorityLow,   // низкий приоритет, чтобы не мешать мотору
-//        };
-//
-//    I2CScanTaskHandle = osThreadNew(I2CScanTask, NULL, &I2CScanTask_attributes);
-
-
-
-
-    osStatus_t status = osKernelStart();
-
-    // Если дошли сюда — osKernelStart() вернул osError
-    while(1) {
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);   // медленный красный
-        osDelay(500);
-    }
-}
-
-/* USER CODE BEGIN 4 */
-/* USER CODE END 4 */
+// ... (остальной код main и функций)

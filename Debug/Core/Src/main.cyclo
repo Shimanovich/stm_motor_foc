@@ -1,14 +1,14 @@
-../Core/Src/main.cpp:83:6:void zc_sliding_init(ZeroCrossingSlidingWindow*, float*, uint32_t, float, float, float)	3
-../Core/Src/main.cpp:121:7:float zc_sliding_update(ZeroCrossingSlidingWindow*, float, float)	14
-../Core/Src/main.cpp:177:5:int _write(int, char*, int)	1
-../Core/Src/main.cpp:183:6:void Error_Handler()	1
-../Core/Src/main.cpp:221:6:void Stabilization_Init()	1
-../Core/Src/main.cpp:232:6:void SystemClock_Config()	3
-../Core/Src/main.cpp:381:6:void StartFFT_Task(void*)	4
-../Core/Src/main.cpp:428:6:void MotorTask(void*)	5
-../Core/Src/main.cpp:632:6:void I2C_ScanExternalBus(I2C_HandleTypeDef*)	5
-../Core/Src/main.cpp:671:6:void I2CScanTask(void*)	1
-../Core/Src/main.cpp:681:6:void Test_Mot0_PWM()	1
-../Core/Src/main.cpp:716:5:int main()	2
-../Core/Src/main.cpp:810:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:810:1:cpp)	1
+../Core/Src/main.cpp:86:6:void zc_sliding_init(ZeroCrossingSlidingWindow*, float*, uint32_t, float, float, float)	3
+../Core/Src/main.cpp:124:7:float zc_sliding_update(ZeroCrossingSlidingWindow*, float, float)	14
+../Core/Src/main.cpp:180:5:int _write(int, char*, int)	1
+../Core/Src/main.cpp:186:6:void Error_Handler()	1
+../Core/Src/main.cpp:224:6:void Stabilization_Init()	1
+../Core/Src/main.cpp:235:6:void SystemClock_Config()	3
+../Core/Src/main.cpp:384:6:void StartFFT_Task(void*)	4
+../Core/Src/main.cpp:431:6:void MotorTask(void*)	3
+../Core/Src/main.cpp:639:6:void I2C_ScanExternalBus(I2C_HandleTypeDef*)	5
+../Core/Src/main.cpp:678:6:void I2CScanTask(void*)	1
+../Core/Src/main.cpp:688:6:void Test_Mot0_PWM()	1
+../Core/Src/main.cpp:723:5:int main()	2
+../Core/Src/main.cpp:817:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:817:1:cpp)	1
