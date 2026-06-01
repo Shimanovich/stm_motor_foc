@@ -28,6 +28,7 @@
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "common/pid.h"
 
 #define SAMPLES 128U          // должно быть степенью 2
 
@@ -38,7 +39,9 @@ typedef struct {
     uint32_t reserved;        // выравнивание
 } AccelPacket_t;
 
-
+// Пример начальных коэффициентов (подбирайте экспериментально!)
+static PIDController pid_pitch(0.1f, 0.0f, 0.0f, 500.0f, 25.0f);  // P,I,D,ramp,limit
+static PIDController   pid_yaw(1.0f, 0.0f, 0.0f, 500.0f, 25.0f);
 
 
 //void init(void) {
@@ -554,31 +557,35 @@ void MotorTask(void *argument)
 
         MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
         gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD ; // pitch
-       // gyro1_y = Notch_Update(&gyro_notch, gyro1_y);
-        float vel_cmd = gyro1_y - sum1;
-        //vel_cmd = Notch_Update(&common_notch, vel_cmd);
-        motor0.move(vel_cmd);   // pitch
+        // Для pitch (мотор0)
+        float error_pitch = 0.0f - gyro1_y;           // setpoint = 0 (стабилизация скорости)
+        float vel_cmd_pitch = pid_pitch(error_pitch); // ← через PID
+        motor0.move(vel_cmd_pitch);
 
 
         MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
         gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD ; // yaw
-        motor1.move(-(gyro2_z+ sum2) );  // yaw
+        float error_yaw = 0.0f - gyro2_z;
+        float vel_cmd_yaw = pid_yaw(error_yaw);
+        motor1.move(-vel_cmd_yaw);
 
-        static int cnt =0;
-        float freq = zc_sliding_update(&zc, vel_cmd, SAMPLE_RATE);
-
-            if (freq > 0.1f) {
-            	cnt++;
-
-            	if (cnt>128)
-            	{
-
-            		printf("%.2f\r\n",freq);
-            		cnt= 0;
-            	}
-            	//printf("freq %.2f\r\n",freq);
-            	//printf(">g1:%f\n", freq);
-            }
+//        static int cnt =0;
+//
+//
+//        float freq = zc_sliding_update(&zc, vel_cmd, SAMPLE_RATE);
+//
+//            if (freq > 0.1f) {
+//            	cnt++;
+//
+//            	if (cnt>128)
+//            	{
+//
+//            		printf("%.2f\r\n",freq);
+//            		cnt= 0;
+//            	}
+//            	//printf("freq %.2f\r\n",freq);
+//            	//printf(">g1:%f\n", freq);
+//            }
 
 //        if (pkt!=NULL)
 //        {
