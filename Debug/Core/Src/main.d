@@ -58,7 +58,8 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
- ../Core/Src/common/pid.h
+ ../Core/Src/common/pid.h \
+ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/lowpass_filter.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 ../Core/Inc/stm32f1xx_hal_conf.h:
@@ -125,3 +126,4 @@ D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/base
 ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h:
 ../Core/Src/common/pid.h:
+D:/work/my_stabilization_project/storm_stab/stab_controller/Core/Src/common/lowpass_filter.h:

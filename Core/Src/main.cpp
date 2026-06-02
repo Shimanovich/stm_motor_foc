@@ -30,6 +30,8 @@
 #include "queue.h"
 #include "common/pid.h"
 
+#include "lowpass_filter.h"
+
 #define SAMPLES 128U          // должно быть степенью 2
 
 typedef struct {
@@ -43,6 +45,8 @@ typedef struct {
 static PIDController pid_pitch(0.1f, 0.0f, 0.0f, 500.0f, 25.0f);  // P,I,D,ramp,limit
 static PIDController   pid_yaw(1.0f, 0.0f, 0.0f, 500.0f, 25.0f);
 
+
+LowPassFilter gyro_filter_x(0.025f);
 
 //void init(void) {
 //    zc_sliding_init(&zc, sample_buffer, BUFFER_SIZE, WINDOW_DURATION, 0.08f, SAMPLE_RATE);
@@ -558,16 +562,20 @@ void MotorTask(void *argument)
         MPU6050_ReadRaw(&hi2c2, 0xd0, &mpu1_data);
         gyro1_y = mpu1_data.gy * (2000.0f / 32768.0f) * DEG_TO_RAD ; // pitch
         // Для pitch (мотор0)
-        float error_pitch = 0.0f - gyro1_y;           // setpoint = 0 (стабилизация скорости)
-        float vel_cmd_pitch = pid_pitch(error_pitch); // ← через PID
-        motor0.move(vel_cmd_pitch);
+        float error_pitch = 0.0f + gyro1_y;           // setpoint = 0 (стабилизация скорости)
+
+        float vel_cmd_pitch = error_pitch;
+        //float vel_cmd_pitch = pid_pitch(error_pitch); // ← через PID
+        //float vel_cmd_pitch = gyro_filter_x(error_pitch);
+        gyro1_y = gyro_filter_x(gyro1_y);
+        motor0.move(gyro1_y);
 
 
         MPU6050_ReadRaw(&hi2c1, 0xd2, &mpu2_data);
         gyro2_z = mpu2_data.gz * (2000.0f / 32768.0f) * DEG_TO_RAD ; // yaw
-        float error_yaw = 0.0f - gyro2_z;
-        float vel_cmd_yaw = pid_yaw(error_yaw);
-        motor1.move(-vel_cmd_yaw);
+        float error_yaw = gyro2_z;
+        //float vel_cmd_yaw = pid_yaw(error_yaw);
+        motor1.move(-gyro2_z);
 
 //        static int cnt =0;
 //
